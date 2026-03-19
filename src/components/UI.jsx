@@ -45,9 +45,9 @@ export function Btn({ children, variant = 'primary', onClick, disabled, style: s
 }
 
 /* ── Card ── */
-export function Card({ children, style: sx, borderColor, className = '' }) {
+export function Card({ children, style: sx, borderColor, className = '', onClick }) {
     return (
-        <div className={`fade-in ${className}`} style={{
+        <div className={`fade-in ${className}`} onClick={onClick} style={{
             background: C.bg, borderRadius: 14,
             border: `1px solid ${borderColor || C.border}`,
             boxShadow: '0 1px 3px rgba(0,0,0,.04)',
