@@ -2,7 +2,7 @@
 const STORAGE_KEY = 'mindai-api-key';
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const DEFAULT_MODEL = 'anthropic/claude-sonnet-4';
-const DEFAULT_API_KEY = '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';
+const DEFAULT_API_KEY = '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';
 
 export function getApiKey() {
     try {
