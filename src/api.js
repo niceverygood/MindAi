@@ -1,20 +1,44 @@
 // OpenRouter API configuration
-const OPENROUTER_API_KEY = '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';
+const STORAGE_KEY = 'mindai-api-key';
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const MODEL = 'anthropic/claude-sonnet-4';
+const DEFAULT_MODEL = 'anthropic/claude-sonnet-4';
+const DEFAULT_API_KEY = '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';
+
+export function getApiKey() {
+    try {
+        return localStorage.getItem(STORAGE_KEY) || DEFAULT_API_KEY;
+    } catch {
+        return DEFAULT_API_KEY;
+    }
+}
+
+export function setApiKey(key) {
+    try {
+        localStorage.setItem(STORAGE_KEY, key.trim());
+    } catch { }
+}
+
+export function hasApiKey() {
+    return !!getApiKey();
+}
 
 export async function callAI(messages, maxTokens = 4000) {
+    const apiKey = getApiKey();
+    if (!apiKey) {
+        throw new Error('API 키가 설정되지 않았습니다. 설정에서 OpenRouter API 키를 입력해주세요.');
+    }
+
     try {
         const res = await fetch(OPENROUTER_BASE_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                'Authorization': `Bearer ${apiKey}`,
                 'HTTP-Referer': window.location.origin,
                 'X-Title': 'MindAI Platform',
             },
             body: JSON.stringify({
-                model: MODEL,
+                model: DEFAULT_MODEL,
                 max_tokens: maxTokens,
                 messages,
             }),
@@ -22,6 +46,9 @@ export async function callAI(messages, maxTokens = 4000) {
 
         if (!res.ok) {
             const errData = await res.json().catch(() => ({}));
+            if (res.status === 401) {
+                throw new Error('API 키가 유효하지 않습니다. 설정에서 올바른 키를 입력하세요.');
+            }
             throw new Error(errData.error?.message || `API Error: ${res.status}`);
         }
 
