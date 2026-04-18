@@ -1,42 +1,11 @@
-// OpenRouter API configuration
-const STORAGE_KEY = 'mindai-api-key';
-const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const ENDPOINT = '/api/chat';
 const DEFAULT_MODEL = 'anthropic/claude-sonnet-4';
-const DEFAULT_API_KEY = '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';
-
-export function getApiKey() {
-    try {
-        return localStorage.getItem(STORAGE_KEY) || DEFAULT_API_KEY;
-    } catch {
-        return DEFAULT_API_KEY;
-    }
-}
-
-export function setApiKey(key) {
-    try {
-        localStorage.setItem(STORAGE_KEY, key.trim());
-    } catch { }
-}
-
-export function hasApiKey() {
-    return !!getApiKey();
-}
 
 export async function callAI(messages, maxTokens = 4000) {
-    const apiKey = getApiKey();
-    if (!apiKey) {
-        throw new Error('API 키가 설정되지 않았습니다. 설정에서 OpenRouter API 키를 입력해주세요.');
-    }
-
     try {
-        const res = await fetch(OPENROUTER_BASE_URL, {
+        const res = await fetch(ENDPOINT, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`,
-                'HTTP-Referer': window.location.origin,
-                'X-Title': 'MindAI Platform',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 model: DEFAULT_MODEL,
                 max_tokens: maxTokens,
@@ -46,41 +15,32 @@ export async function callAI(messages, maxTokens = 4000) {
 
         if (!res.ok) {
             const errData = await res.json().catch(() => ({}));
-            if (res.status === 401) {
-                throw new Error('API 키가 유효하지 않습니다. 설정에서 올바른 키를 입력하세요.');
-            }
             throw new Error(errData.error?.message || `API Error: ${res.status}`);
         }
 
         const data = await res.json();
-        const text = data.choices?.[0]?.message?.content || '';
-        return text;
+        return data.choices?.[0]?.message?.content || '';
     } catch (e) {
-        console.error('OpenRouter API Error:', e);
+        console.error('AI API Error:', e);
         throw e;
     }
 }
 
 export async function callAIJSON(messages, maxTokens = 4000) {
     const text = await callAI(messages, maxTokens);
-    // Strip markdown code fences if present
     const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
     return JSON.parse(cleaned);
 }
 
-// For image/document analysis via OpenRouter vision
 export async function analyzeDocument(base64, mediaType) {
     const content = [];
 
     if (mediaType.startsWith('image/')) {
         content.push({
             type: 'image_url',
-            image_url: {
-                url: `data:${mediaType};base64,${base64}`,
-            },
+            image_url: { url: `data:${mediaType};base64,${base64}` },
         });
     } else {
-        // For PDFs, we'll send as text instruction
         content.push({
             type: 'text',
             text: `[업로드된 문서: ${mediaType} 파일, base64 데이터 포함]`,
@@ -104,6 +64,5 @@ export async function analyzeDocument(base64, mediaType) {
 }`,
     });
 
-    const messages = [{ role: 'user', content }];
-    return callAIJSON(messages, 4000);
+    return callAIJSON([{ role: 'user', content }], 4000);
 }
